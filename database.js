@@ -230,5 +230,49 @@ export async function deleteUser(username) {
       connection.release();
     }
   }
-  const user = await getUser("TOKENSAMPLE")
-console.log(user);
+
+  export async function insertBalance(accountId, amountToAdd) {
+    const connection = await pool.getConnection();
+    try {
+      // Begin a transaction
+      await connection.beginTransaction();
+  
+      // Get the current balance of the account
+      const getBalanceQuery = `
+        SELECT balance FROM Accounts WHERE account_id = ?;
+      `;
+      const [balanceRows] = await connection.query(getBalanceQuery, [accountId]);
+  
+      if (balanceRows.length === 0) {
+        throw new Error('Account not found.');
+      }
+  
+      const currentBalance = parseFloat(balanceRows[0].balance); // Convert to float
+  
+      // Calculate the new balance by adding the amount to the current balance
+      const newBalance = currentBalance + parseFloat(amountToAdd); // Convert amountToAdd to float
+  
+      // Update the balance for the existing account
+      const updateBalanceQuery = `
+        UPDATE Accounts SET balance = ? WHERE account_id = ?;
+      `;
+      await connection.query(updateBalanceQuery, [newBalance, accountId]);
+  
+      // Commit the transaction
+      await connection.commit();
+  
+      // Return the new balance after adding the amount
+      return newBalance;
+    } catch (error) {
+      // Rollback the transaction in case of an error
+      await connection.rollback();
+      throw error; // Rethrow the error to be handled by the caller
+    } finally {
+      // Release the connection back to the pool
+      connection.release();
+    }
+  }
+
+  
+ //const user = await insertBalance(507737, 5222123);
+//console.log(user);

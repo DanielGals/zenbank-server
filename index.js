@@ -2,7 +2,7 @@ import express from 'express'
 import jwt from 'jsonwebtoken';
 import cors from 'cors'; //CORS
 
-import {getUsers, getUser, createUser, updatePassword, deleteUser, checkCredentials, GenerateAccountNumber, createBankAccount, getBankAccountUser} from './database.js'
+import {insertBalance, getUsers, getUser, createUser, updatePassword, deleteUser, checkCredentials, GenerateAccountNumber, createBankAccount, getBankAccountUser} from './database.js'
 
 
 const app = express()
@@ -231,6 +231,19 @@ app.delete("/users/delete", async (req, res) => {
     }
   });
   
+// Insert Balance API Endpoint
+app.post('/insert-balance', async (req, res) => {
+  try {
+    const { accountId, amountToAdd } = req.body;
+    
+    // Insert balance using your provided function
+    const balance = await insertBalance(accountId, amountToAdd);
+    
+    res.json({ balance });
+  } catch (error) {
+    res.status(500).json({ error: 'An error occurred while inserting the balance.' });
+  }
+});
 
 
 
@@ -247,3 +260,4 @@ app.use((err, req, res, next) => {
   app.listen(8080, () =>{
     console.log('Server running on port 8080 FIREEEEE');
   })
+
