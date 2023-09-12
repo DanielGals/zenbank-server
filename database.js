@@ -65,10 +65,31 @@ export async function getUser(username)
    return rows[0]
 }
 
+export async function getUserId(accountID)
+{
+   const [rows] = await pool.query(`
+   SELECT * 
+   FROM Accounts
+   WHERE account_id = ?
+   `, [accountID]);
+
+   return rows[0]
+}
+
 export async function getBankAccountUser(user_id) {
   const [rows] = await pool.query(`
   SELECT * 
   FROM Accounts
+  WHERE user_id = ?
+  `, [user_id]);
+
+  return rows[0];
+}
+
+export async function displayName(user_id) {
+  const [rows] = await pool.query(`
+  SELECT * 
+  FROM Users
   WHERE user_id = ?
   `, [user_id]);
 
@@ -273,6 +294,58 @@ export async function deleteUser(username) {
     }
   }
 
+  // ! ERROR IN DEDUCTING BALANCE
+  export async function deductBalance(accountId, amountToDeduct) {
+    const connection = await pool.getConnection();
+    try {
+      // Begin a transaction
+      await connection.beginTransaction();
   
- //const user = await insertBalance(507737, 5222123);
+      // Get the current balance of the account
+      const getBalanceQuery = `
+        SELECT balance FROM Accounts WHERE account_id = ?;
+      `;
+      const [balanceRows] = await connection.query(getBalanceQuery, [accountId]);
+  
+      if (balanceRows.length === 0) {
+        throw new Error('Account not found.');
+      }
+  
+      const currentBalance = parseFloat(balanceRows[0].balance); // Convert to float
+  
+      // Check if there are sufficient funds to deduct
+      if (currentBalance < amountToDeduct) {
+        throw new Error('Insufficient funds.');
+      }
+  
+      // Calculate the new balance by deducting the amount from the current balance
+      const newBalance = currentBalance - parseFloat(amountToDeduct);
+      console.log(`Current Balance: ${currentBalance}`);
+      console.log(`Amount to Deduct: ${amountToDeduct}`);
+      console.log(`New Balance: ${newBalance}`);
+  
+      // Update the balance for the existing account
+      const updateBalanceQuery = `
+        UPDATE Accounts SET balance = ? WHERE account_id = ?;
+      `;
+      await connection.query(updateBalanceQuery, [newBalance, accountId]);
+  
+      // Commit the transaction
+      await connection.commit();
+  
+      // Return the new balance after deducting the amount
+      return newBalance;
+    } catch (error) {
+      // Rollback the transaction in case of an error
+      await connection.rollback();
+      throw error; // Rethrow the error to be handled by the caller
+    } finally {
+      // Release the connection back to the pool
+      connection.release();
+    }
+  }
+  
+
+  
+//const user = await deductBalance(192224, 71) ;
 //console.log(user);

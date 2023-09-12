@@ -2,7 +2,7 @@ import express from 'express'
 import jwt from 'jsonwebtoken';
 import cors from 'cors'; //CORS
 
-import {insertBalance, getUsers, getUser, createUser, updatePassword, deleteUser, checkCredentials, GenerateAccountNumber, createBankAccount, getBankAccountUser} from './database.js'
+import {deductBalance, displayName, insertBalance, getUserId, getUsers, getUser, createUser, updatePassword, deleteUser, checkCredentials, GenerateAccountNumber, createBankAccount, getBankAccountUser} from './database.js'
 
 
 const app = express()
@@ -61,6 +61,21 @@ app.get("/accounts/:user_id", async (req, res) => {
   res.send(user); // Send the user information as the response
 });
 
+app.get("/name/:user_id", async (req, res) => {
+  const user_id = req.params.user_id; // Get the user_id parameter from the URL
+  const user = await displayName(user_id); // Call the getUserInfo function to retrieve user information
+  res.send(user); // Send the user information as the response
+});
+
+//return the specific user 'username' that is typed in the http request
+app.get("/account/:account_id", async (req, res) =>
+{
+    const account_id = req.params.account_id // for adding parameter in address
+    const user = await getUserId(account_id)
+    res.send(user);
+})
+
+
 // * To post,get,patch on thunder client, run the server: npm run devStart
 // * enter the api url + endpoint on thunderclient
 // * DONT FORGET TO CHANGE THE REQUEST: POST / GET / PATCH / DELETE
@@ -116,9 +131,6 @@ app.post('/create-bank-account', async (req, res) => {
   catch (error) {
     res.status(500).send({ message: "error At something", error: error.message });
   }
- 
-
-
 });
 
 
@@ -238,6 +250,19 @@ app.post('/insert-balance', async (req, res) => {
     
     // Insert balance using your provided function
     const balance = await insertBalance(accountId, amountToAdd);
+    
+    res.json({ balance });
+  } catch (error) {
+    res.status(500).json({ error: 'An error occurred while inserting the balance.' });
+  }
+});
+
+app.put('/delete-balance', async (req, res) => {
+  try {
+    const { accountId, amountToAdd } = req.body;
+    
+    // Insert balance using your provided function
+    const balance = await deductBalance(accountId, amountToAdd);
     
     res.json({ balance });
   } catch (error) {
